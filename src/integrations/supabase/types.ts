@@ -98,9 +98,31 @@ export type Database = {
         }
         Relationships: []
       }
+      photo_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       photos: {
         Row: {
           caption: string | null
+          category_id: string | null
           created_at: string
           id: string
           storage_path: string
@@ -108,6 +130,7 @@ export type Database = {
         }
         Insert: {
           caption?: string | null
+          category_id?: string | null
           created_at?: string
           id?: string
           storage_path: string
@@ -115,12 +138,21 @@ export type Database = {
         }
         Update: {
           caption?: string | null
+          category_id?: string | null
           created_at?: string
           id?: string
           storage_path?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "photos_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "photo_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
