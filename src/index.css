@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 50% 97%;
+    --foreground: 30 10% 15%;
+    --card: 30 40% 95%;
+    --card-foreground: 30 10% 15%;
+    --primary: 340 60% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 30% 88%;
+    --secondary-foreground: 30 10% 25%;
+    --muted: 30 20% 92%;
+    --muted-foreground: 30 10% 45%;
+    --accent: 340 40% 90%;
+    --accent-foreground: 340 60% 35%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 20% 85%;
+    --input: 30 20% 85%;
+    --ring: 340 60% 55%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+.photo-frame {
+  @apply relative p-3 bg-white rounded-lg;
+  box-shadow: 
+    0 2px 8px -2px rgba(0,0,0,0.1),
+    inset 0 0 0 1px rgba(0,0,0,0.05),
+    0 1px 3px rgba(0,0,0,0.06);
+}
+
+.photo-frame::before {
+  content: '';
+  @apply absolute inset-1 border border-border/40 rounded pointer-events-none;
+}
