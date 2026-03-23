@@ -1,24 +1,35 @@
 import React, { useState } from 'react';
 
-const PhotoFrame = () => {
+const PhotoFrame = ({ imageUrl }) => {
     const [caption, setCaption] = useState('');
 
     const handleCaptionChange = (e) => {
         setCaption(e.target.value);
     };
 
+    const downloadImage = () => {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = 'photo-frame-image.png';
+        link.click();
+    };
+
     return (
-        <div style={{ border: '5px solid #f0c', borderRadius: '10px', padding: '10px', display: 'inline-block' }}>
-            <img src="https://via.placeholder.com/300" alt="frame" style={{ width: '300px', borderRadius: '10px' }} />
-            <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                <input 
-                    type="text" 
-                    value={caption} 
-                    onChange={handleCaptionChange} 
-                    placeholder="Enter caption" 
-                    style={{ width: '80%', padding: '5px' }}
-                />
-            </div>
+        <div className="relative flex flex-col items-center justify-center bg-gray-200 p-4 rounded-lg shadow-lg border border-gray-300">
+            <img src={imageUrl} alt="Frame" className="rounded-lg" />
+            <input 
+                type="text" 
+                value={caption} 
+                onChange={handleCaptionChange} 
+                className="mt-2 p-2 border rounded"
+                placeholder="Edit caption..."
+            />
+            <button 
+                onClick={downloadImage} 
+                className="mt-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+                Download Photo
+            </button>
         </div>
     );
 };
