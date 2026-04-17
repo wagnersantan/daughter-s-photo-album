@@ -44,15 +44,24 @@ interface Milestone {
   icon: string | null;
 }
 
+interface DiaryEntry {
+  id: string;
+  month_number: number;
+  title: string;
+  content: string | null;
+  highlights: string | null;
+}
+
 export default function Admin() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline'>('invites');
+  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline' | 'diary'>('invites');
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [newCategory, setNewCategory] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
 
@@ -62,18 +71,25 @@ export default function Admin() {
   const [msDate, setMsDate] = useState('');
   const [msIcon, setMsIcon] = useState('⭐');
 
+  // Diary form
+  const [dMonth, setDMonth] = useState('');
+  const [dTitle, setDTitle] = useState('');
+  const [dContent, setDContent] = useState('');
+  const [dHighlights, setDHighlights] = useState('');
+
   useEffect(() => {
     fetchAll();
   }, []);
 
   const fetchAll = async () => {
-    const [inv, prof, perm, rol, cat, ms] = await Promise.all([
+    const [inv, prof, perm, rol, cat, ms, di] = await Promise.all([
       supabase.from('invite_links').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('user_id, display_name'),
       supabase.from('user_permissions').select('*'),
       supabase.from('user_roles').select('*'),
       supabase.from('photo_categories').select('*').order('name'),
       supabase.from('milestones').select('*').order('milestone_date'),
+      supabase.from('monthly_diary').select('*').order('month_number'),
     ]);
     if (inv.data) setInvites(inv.data);
     if (prof.data) setProfiles(prof.data);
@@ -81,6 +97,52 @@ export default function Admin() {
     if (rol.data) setRoles(rol.data);
     if (cat.data) setCategories(cat.data);
     if (ms.data) setMilestones(ms.data);
+    if (di.data) setDiary(di.data);
+  };
+
+  const saveDiaryEntry = async () => {
+    const monthNum = parseInt(dMonth);
+    if (!monthNum || !dTitle.trim()) {
+      toast.error('Informe o número do mês e o título');
+      return;
+    }
+    const existing = diary.find(d => d.month_number === monthNum);
+    if (existing) {
+      const { error } = await supabase.from('monthly_diary').update({
+        title: dTitle.trim(),
+        content: dContent.trim() || null,
+        highlights: dHighlights.trim() || null,
+      }).eq('id', existing.id);
+      if (error) toast.error('Erro ao atualizar');
+      else { toast.success('Mês atualizado!'); resetDiaryForm(); fetchAll(); }
+    } else {
+      const { error } = await supabase.from('monthly_diary').insert({
+        month_number: monthNum,
+        title: dTitle.trim(),
+        content: dContent.trim() || null,
+        highlights: dHighlights.trim() || null,
+        created_by: user?.id,
+      });
+      if (error) toast.error('Erro ao criar entrada');
+      else { toast.success('Mês adicionado!'); resetDiaryForm(); fetchAll(); }
+    }
+  };
+
+  const editDiaryEntry = (entry: DiaryEntry) => {
+    setDMonth(String(entry.month_number));
+    setDTitle(entry.title);
+    setDContent(entry.content || '');
+    setDHighlights(entry.highlights || '');
+  };
+
+  const resetDiaryForm = () => {
+    setDMonth(''); setDTitle(''); setDContent(''); setDHighlights('');
+  };
+
+  const deleteDiaryEntry = async (id: string) => {
+    await supabase.from('monthly_diary').delete().eq('id', id);
+    toast.success('Entrada removida');
+    fetchAll();
   };
 
   const createInvite = async () => {
@@ -161,6 +223,7 @@ export default function Admin() {
     { key: 'family' as const, label: '👨‍👩‍👧 Família' },
     { key: 'categories' as const, label: '📁 Categorias' },
     { key: 'timeline' as const, label: '📅 Linha do Tempo' },
+    { key: 'diary' as const, label: '📖 Diário Mensal' },
   ];
 
   return (
