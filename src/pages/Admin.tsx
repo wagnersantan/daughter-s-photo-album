@@ -395,6 +395,78 @@ export default function Admin() {
             </div>
           </div>
         )}
+
+        {/* Diary Tab */}
+        {tab === 'diary' && (
+          <div className="space-y-6">
+            <div className="bg-card p-4 rounded-lg border border-border space-y-3">
+              <h3 className="font-display font-semibold text-foreground">
+                {dMonth && diary.find(d => d.month_number === parseInt(dMonth)) ? 'Editar mês' : 'Novo mês'}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input
+                  value={dMonth}
+                  onChange={e => setDMonth(e.target.value)}
+                  type="number"
+                  min="1"
+                  placeholder="Nº (ex: 2)"
+                  className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                />
+                <input
+                  value={dTitle}
+                  onChange={e => setDTitle(e.target.value)}
+                  placeholder="Título (ex: Dois Meses)"
+                  className="px-3 py-2 border border-input rounded-md bg-background text-foreground sm:col-span-2"
+                />
+              </div>
+              <textarea
+                value={dContent}
+                onChange={e => setDContent(e.target.value)}
+                placeholder="Como foi este mês? Conte tudo..."
+                rows={5}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground resize-none"
+              />
+              <textarea
+                value={dHighlights}
+                onChange={e => setDHighlights(e.target.value)}
+                placeholder="✨ Marquinhos / descobertas (sorriu, segurou a cabeça, etc.)"
+                rows={3}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground resize-none"
+              />
+              <div className="flex gap-2">
+                <button onClick={saveDiaryEntry} className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition inline-flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Salvar mês
+                </button>
+                {dMonth && (
+                  <button onClick={resetDiaryForm} className="px-4 py-2 border border-input text-foreground rounded-md hover:bg-secondary transition">
+                    Limpar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {diary.map(d => (
+                <div key={d.id} className="flex items-center justify-between bg-card p-3 rounded-lg border border-border">
+                  <div className="flex-1">
+                    <span className="font-bold text-primary">Mês {d.month_number}</span>
+                    <span className="ml-2 font-medium text-foreground">{d.title}</span>
+                    {d.content && <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{d.content}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => editDiaryEntry(d)} className="px-2 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-primary-foreground transition">
+                      Editar
+                    </button>
+                    <button onClick={() => deleteDiaryEntry(d.id)} className="p-1.5 text-destructive hover:opacity-80">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {diary.length === 0 && <p className="text-muted-foreground text-center py-4">Nenhum mês registrado ainda</p>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
