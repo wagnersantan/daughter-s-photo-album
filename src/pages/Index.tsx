@@ -5,6 +5,7 @@ import HeroSection from '@/components/HeroSection';
 import PhotoGallery from '@/components/PhotoGallery';
 import MessageWall from '@/components/MessageWall';
 import Timeline from '@/components/Timeline';
+import MonthlyDiary from '@/components/MonthlyDiary';
 
 export default function Index() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export default function Index() {
       <Navbar />
       <HeroSection />
       <Timeline />
+      <MonthlyDiary />
       <PhotoGallery />
       <MessageWall />
     </div>

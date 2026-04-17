@@ -98,6 +98,42 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_diary: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          highlights: string | null
+          id: string
+          month_number: number
+          photo_path: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          highlights?: string | null
+          id?: string
+          month_number: number
+          photo_path?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          highlights?: string | null
+          id?: string
+          month_number?: number
+          photo_path?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       photo_categories: {
         Row: {
           created_at: string

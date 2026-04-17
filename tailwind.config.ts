@@ -34,6 +34,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        coral: "hsl(var(--coral))",
+        mint: "hsl(var(--mint))",
+        lavender: "hsl(var(--lavender))",
+        sunshine: "hsl(var(--sunshine))",
+        bubblegum: "hsl(var(--bubblegum))",
       },
       borderRadius: {
         lg: "var(--radius)",

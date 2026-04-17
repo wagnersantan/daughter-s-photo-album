@@ -44,15 +44,24 @@ interface Milestone {
   icon: string | null;
 }
 
+interface DiaryEntry {
+  id: string;
+  month_number: number;
+  title: string;
+  content: string | null;
+  highlights: string | null;
+}
+
 export default function Admin() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline'>('invites');
+  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline' | 'diary'>('invites');
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [newCategory, setNewCategory] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
 
@@ -62,18 +71,25 @@ export default function Admin() {
   const [msDate, setMsDate] = useState('');
   const [msIcon, setMsIcon] = useState('⭐');
 
+  // Diary form
+  const [dMonth, setDMonth] = useState('');
+  const [dTitle, setDTitle] = useState('');
+  const [dContent, setDContent] = useState('');
+  const [dHighlights, setDHighlights] = useState('');
+
   useEffect(() => {
     fetchAll();
   }, []);
 
   const fetchAll = async () => {
-    const [inv, prof, perm, rol, cat, ms] = await Promise.all([
+    const [inv, prof, perm, rol, cat, ms, di] = await Promise.all([
       supabase.from('invite_links').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('user_id, display_name'),
       supabase.from('user_permissions').select('*'),
       supabase.from('user_roles').select('*'),
       supabase.from('photo_categories').select('*').order('name'),
       supabase.from('milestones').select('*').order('milestone_date'),
+      supabase.from('monthly_diary').select('*').order('month_number'),
     ]);
     if (inv.data) setInvites(inv.data);
     if (prof.data) setProfiles(prof.data);
@@ -81,6 +97,52 @@ export default function Admin() {
     if (rol.data) setRoles(rol.data);
     if (cat.data) setCategories(cat.data);
     if (ms.data) setMilestones(ms.data);
+    if (di.data) setDiary(di.data);
+  };
+
+  const saveDiaryEntry = async () => {
+    const monthNum = parseInt(dMonth);
+    if (!monthNum || !dTitle.trim()) {
+      toast.error('Informe o número do mês e o título');
+      return;
+    }
+    const existing = diary.find(d => d.month_number === monthNum);
+    if (existing) {
+      const { error } = await supabase.from('monthly_diary').update({
+        title: dTitle.trim(),
+        content: dContent.trim() || null,
+        highlights: dHighlights.trim() || null,
+      }).eq('id', existing.id);
+      if (error) toast.error('Erro ao atualizar');
+      else { toast.success('Mês atualizado!'); resetDiaryForm(); fetchAll(); }
+    } else {
+      const { error } = await supabase.from('monthly_diary').insert({
+        month_number: monthNum,
+        title: dTitle.trim(),
+        content: dContent.trim() || null,
+        highlights: dHighlights.trim() || null,
+        created_by: user?.id,
+      });
+      if (error) toast.error('Erro ao criar entrada');
+      else { toast.success('Mês adicionado!'); resetDiaryForm(); fetchAll(); }
+    }
+  };
+
+  const editDiaryEntry = (entry: DiaryEntry) => {
+    setDMonth(String(entry.month_number));
+    setDTitle(entry.title);
+    setDContent(entry.content || '');
+    setDHighlights(entry.highlights || '');
+  };
+
+  const resetDiaryForm = () => {
+    setDMonth(''); setDTitle(''); setDContent(''); setDHighlights('');
+  };
+
+  const deleteDiaryEntry = async (id: string) => {
+    await supabase.from('monthly_diary').delete().eq('id', id);
+    toast.success('Entrada removida');
+    fetchAll();
   };
 
   const createInvite = async () => {
@@ -161,6 +223,7 @@ export default function Admin() {
     { key: 'family' as const, label: '👨‍👩‍👧 Família' },
     { key: 'categories' as const, label: '📁 Categorias' },
     { key: 'timeline' as const, label: '📅 Linha do Tempo' },
+    { key: 'diary' as const, label: '📖 Diário Mensal' },
   ];
 
   return (
@@ -329,6 +392,78 @@ export default function Admin() {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Diary Tab */}
+        {tab === 'diary' && (
+          <div className="space-y-6">
+            <div className="bg-card p-4 rounded-lg border border-border space-y-3">
+              <h3 className="font-display font-semibold text-foreground">
+                {dMonth && diary.find(d => d.month_number === parseInt(dMonth)) ? 'Editar mês' : 'Novo mês'}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input
+                  value={dMonth}
+                  onChange={e => setDMonth(e.target.value)}
+                  type="number"
+                  min="1"
+                  placeholder="Nº (ex: 2)"
+                  className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                />
+                <input
+                  value={dTitle}
+                  onChange={e => setDTitle(e.target.value)}
+                  placeholder="Título (ex: Dois Meses)"
+                  className="px-3 py-2 border border-input rounded-md bg-background text-foreground sm:col-span-2"
+                />
+              </div>
+              <textarea
+                value={dContent}
+                onChange={e => setDContent(e.target.value)}
+                placeholder="Como foi este mês? Conte tudo..."
+                rows={5}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground resize-none"
+              />
+              <textarea
+                value={dHighlights}
+                onChange={e => setDHighlights(e.target.value)}
+                placeholder="✨ Marquinhos / descobertas (sorriu, segurou a cabeça, etc.)"
+                rows={3}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground resize-none"
+              />
+              <div className="flex gap-2">
+                <button onClick={saveDiaryEntry} className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition inline-flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Salvar mês
+                </button>
+                {dMonth && (
+                  <button onClick={resetDiaryForm} className="px-4 py-2 border border-input text-foreground rounded-md hover:bg-secondary transition">
+                    Limpar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {diary.map(d => (
+                <div key={d.id} className="flex items-center justify-between bg-card p-3 rounded-lg border border-border">
+                  <div className="flex-1">
+                    <span className="font-bold text-primary">Mês {d.month_number}</span>
+                    <span className="ml-2 font-medium text-foreground">{d.title}</span>
+                    {d.content && <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{d.content}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => editDiaryEntry(d)} className="px-2 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-primary-foreground transition">
+                      Editar
+                    </button>
+                    <button onClick={() => deleteDiaryEntry(d.id)} className="p-1.5 text-destructive hover:opacity-80">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {diary.length === 0 && <p className="text-muted-foreground text-center py-4">Nenhum mês registrado ainda</p>}
             </div>
           </div>
         )}
