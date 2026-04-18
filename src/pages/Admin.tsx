@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Copy, Crown } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Copy, Crown, Send } from 'lucide-react';
 
 interface Profile {
   user_id: string;
@@ -64,6 +64,8 @@ export default function Admin() {
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [newCategory, setNewCategory] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendForm, setSendForm] = useState<Record<string, { name: string; phone: string; relation: string }>>({});
 
   // Milestone form
   const [msTitle, setMsTitle] = useState('');
@@ -166,6 +168,36 @@ export default function Admin() {
     toast.success('Código copiado!');
   };
 
+  const copyInviteUrl = (code: string) => {
+    const url = `https://albumsophia.lovable.app/register?invite=${code}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copiado!');
+  };
+
+  const sendInviteToN8n = async (inviteId: string) => {
+    const form = sendForm[inviteId] || { name: '', phone: '', relation: '' };
+    setSendingId(inviteId);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invite-n8n', {
+        body: {
+          invite_id: inviteId,
+          recipient_name: form.name || null,
+          recipient_phone: form.phone || null,
+          relation: form.relation || null,
+        },
+      });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      toast.success('Convite enviado para o n8n! 📲');
+      setSendForm(prev => ({ ...prev, [inviteId]: { name: '', phone: '', relation: '' } }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Falha ao enviar: ' + msg);
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   const togglePermission = async (userId: string, field: keyof Permission, value: boolean) => {
     await supabase.from('user_permissions').update({ [field]: !value }).eq('user_id', userId);
     fetchAll();
@@ -266,21 +298,57 @@ export default function Admin() {
                 <Plus className="w-4 h-4" /> Criar Convite
               </button>
             </div>
-            <div className="space-y-2">
-              {invites.map(inv => (
-                <div key={inv.id} className="flex items-center justify-between bg-card p-3 rounded-lg border border-border">
-                  <div>
-                    <code className="text-sm font-mono text-foreground">{inv.code}</code>
-                    <span className="ml-3 text-xs text-muted-foreground">
-                      {inv.uses}/{inv.max_uses ?? '∞'} usos • {inv.active ? '✅ Ativo' : '❌ Inativo'}
-                    </span>
+            <div className="space-y-3">
+              {invites.map(inv => {
+                const form = sendForm[inv.id] || { name: '', phone: '', relation: '' };
+                const updateForm = (field: 'name' | 'phone' | 'relation', val: string) =>
+                  setSendForm(prev => ({ ...prev, [inv.id]: { ...form, [field]: val } }));
+                return (
+                  <div key={inv.id} className="bg-card p-4 rounded-lg border border-border space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <code className="text-sm font-mono text-foreground">{inv.code}</code>
+                        <span className="ml-3 text-xs text-muted-foreground">
+                          {inv.uses}/{inv.max_uses ?? '∞'} usos • {inv.active ? '✅ Ativo' : '❌ Inativo'}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => copyCode(inv.code)} title="Copiar código" className="p-1.5 text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></button>
+                        <button onClick={() => copyInviteUrl(inv.code)} title="Copiar link" className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded hover:opacity-80">🔗 Link</button>
+                        <button onClick={() => deleteInvite(inv.id)} title="Remover" className="p-1.5 text-destructive hover:opacity-80"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-border">
+                      <input
+                        value={form.name}
+                        onChange={e => updateForm('name', e.target.value)}
+                        placeholder="Nome (ex: Vovó)"
+                        className="px-2 py-1.5 text-sm border border-input rounded-md bg-background text-foreground"
+                      />
+                      <input
+                        value={form.phone}
+                        onChange={e => updateForm('phone', e.target.value)}
+                        placeholder="WhatsApp +55..."
+                        className="px-2 py-1.5 text-sm border border-input rounded-md bg-background text-foreground"
+                      />
+                      <input
+                        value={form.relation}
+                        onChange={e => updateForm('relation', e.target.value)}
+                        placeholder="Parentesco (avó, tio...)"
+                        className="px-2 py-1.5 text-sm border border-input rounded-md bg-background text-foreground"
+                      />
+                    </div>
+                    <button
+                      onClick={() => sendInviteToN8n(inv.id)}
+                      disabled={sendingId === inv.id}
+                      className="w-full px-3 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition inline-flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+                    >
+                      <Send className="w-4 h-4" />
+                      {sendingId === inv.id ? 'Enviando...' : 'Enviar via WhatsApp (n8n)'}
+                    </button>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => copyCode(inv.code)} className="p-1.5 text-muted-foreground hover:text-foreground"><Copy className="w-4 h-4" /></button>
-                    <button onClick={() => deleteInvite(inv.id)} className="p-1.5 text-destructive hover:opacity-80"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
