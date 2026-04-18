@@ -168,6 +168,36 @@ export default function Admin() {
     toast.success('Código copiado!');
   };
 
+  const copyInviteUrl = (code: string) => {
+    const url = `https://albumsophia.lovable.app/register?invite=${code}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copiado!');
+  };
+
+  const sendInviteToN8n = async (inviteId: string) => {
+    const form = sendForm[inviteId] || { name: '', phone: '', relation: '' };
+    setSendingId(inviteId);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invite-n8n', {
+        body: {
+          invite_id: inviteId,
+          recipient_name: form.name || null,
+          recipient_phone: form.phone || null,
+          relation: form.relation || null,
+        },
+      });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      toast.success('Convite enviado para o n8n! 📲');
+      setSendForm(prev => ({ ...prev, [inviteId]: { name: '', phone: '', relation: '' } }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Falha ao enviar: ' + msg);
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   const togglePermission = async (userId: string, field: keyof Permission, value: boolean) => {
     await supabase.from('user_permissions').update({ [field]: !value }).eq('user_id', userId);
     fetchAll();
