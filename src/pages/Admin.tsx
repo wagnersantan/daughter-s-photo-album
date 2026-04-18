@@ -64,6 +64,8 @@ export default function Admin() {
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [newCategory, setNewCategory] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendForm, setSendForm] = useState<Record<string, { name: string; phone: string; relation: string }>>({});
 
   // Milestone form
   const [msTitle, setMsTitle] = useState('');
