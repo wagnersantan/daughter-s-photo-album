@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Copy, Crown } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Copy, Crown, Send } from 'lucide-react';
 
 interface Profile {
   user_id: string;
