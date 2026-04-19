@@ -96,7 +96,7 @@ export default function Admin() {
   }, []);
 
   const fetchAll = async () => {
-    const [inv, prof, perm, rol, cat, ms, di] = await Promise.all([
+    const [inv, prof, perm, rol, cat, ms, di, logs] = await Promise.all([
       supabase.from('invite_links').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('user_id, display_name'),
       supabase.from('user_permissions').select('*'),
@@ -104,6 +104,7 @@ export default function Admin() {
       supabase.from('photo_categories').select('*').order('name'),
       supabase.from('milestones').select('*').order('milestone_date'),
       supabase.from('monthly_diary').select('*').order('month_number'),
+      supabase.from('invite_send_logs').select('*').order('created_at', { ascending: false }).limit(100),
     ]);
     if (inv.data) setInvites(inv.data);
     if (prof.data) setProfiles(prof.data);
@@ -112,6 +113,7 @@ export default function Admin() {
     if (cat.data) setCategories(cat.data);
     if (ms.data) setMilestones(ms.data);
     if (di.data) setDiary(di.data);
+    if (logs.data) setSendLogs(logs.data);
   };
 
   const saveDiaryEntry = async () => {
@@ -264,6 +266,7 @@ export default function Admin() {
 
   const tabs = [
     { key: 'invites' as const, label: '🔗 Convites' },
+    { key: 'logs' as const, label: '📨 Envios' },
     { key: 'family' as const, label: '👨‍👩‍👧 Família' },
     { key: 'categories' as const, label: '📁 Categorias' },
     { key: 'timeline' as const, label: '📅 Linha do Tempo' },
