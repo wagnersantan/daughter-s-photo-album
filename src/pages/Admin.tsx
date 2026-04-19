@@ -52,9 +52,21 @@ interface DiaryEntry {
   highlights: string | null;
 }
 
+interface SendLog {
+  id: string;
+  invite_code: string | null;
+  recipient_name: string | null;
+  recipient_phone: string | null;
+  relation: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
 export default function Admin() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline' | 'diary'>('invites');
+  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline' | 'diary' | 'logs'>('invites');
+  const [sendLogs, setSendLogs] = useState<SendLog[]>([]);
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
