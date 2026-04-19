@@ -86,13 +86,51 @@ Deno.serve(async (req) => {
       sent_at: new Date().toISOString(),
     };
 
-    const n8nResp = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    // Service-role client to bypass RLS for logging
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    const responseText = await n8nResp.text();
+    let n8nResp: Response;
+    let responseText = "";
+    try {
+      n8nResp = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      responseText = await n8nResp.text();
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : "fetch error";
+      await adminClient.from("invite_send_logs").insert({
+        invite_id: invite.id,
+        invite_code: invite.code,
+        recipient_name: recipient_name ?? null,
+        recipient_phone: recipient_phone ?? null,
+        relation: relation ?? null,
+        status: "failed",
+        error_message: msg,
+        sent_by: claims.claims.sub,
+      });
+      return new Response(
+        JSON.stringify({ error: "Falha ao chamar webhook n8n", details: msg }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const status = n8nResp.ok ? "sent" : "failed";
+    await adminClient.from("invite_send_logs").insert({
+      invite_id: invite.id,
+      invite_code: invite.code,
+      recipient_name: recipient_name ?? null,
+      recipient_phone: recipient_phone ?? null,
+      relation: relation ?? null,
+      status,
+      webhook_response: responseText.slice(0, 2000),
+      error_message: n8nResp.ok ? null : `HTTP ${n8nResp.status}`,
+      sent_by: claims.claims.sub,
+    });
 
     if (!n8nResp.ok) {
       console.error("n8n webhook failed:", n8nResp.status, responseText);

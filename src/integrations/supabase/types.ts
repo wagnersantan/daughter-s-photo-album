@@ -44,6 +44,56 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_send_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          invite_code: string | null
+          invite_id: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          relation: string | null
+          sent_by: string | null
+          status: string
+          webhook_response: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_id?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          relation?: string | null
+          sent_by?: string | null
+          status?: string
+          webhook_response?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_id?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          relation?: string | null
+          sent_by?: string | null
+          status?: string
+          webhook_response?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_send_logs_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "invite_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string

@@ -52,9 +52,21 @@ interface DiaryEntry {
   highlights: string | null;
 }
 
+interface SendLog {
+  id: string;
+  invite_code: string | null;
+  recipient_name: string | null;
+  recipient_phone: string | null;
+  relation: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
 export default function Admin() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline' | 'diary'>('invites');
+  const [tab, setTab] = useState<'invites' | 'family' | 'categories' | 'timeline' | 'diary' | 'logs'>('invites');
+  const [sendLogs, setSendLogs] = useState<SendLog[]>([]);
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -84,7 +96,7 @@ export default function Admin() {
   }, []);
 
   const fetchAll = async () => {
-    const [inv, prof, perm, rol, cat, ms, di] = await Promise.all([
+    const [inv, prof, perm, rol, cat, ms, di, logs] = await Promise.all([
       supabase.from('invite_links').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('user_id, display_name'),
       supabase.from('user_permissions').select('*'),
@@ -92,6 +104,7 @@ export default function Admin() {
       supabase.from('photo_categories').select('*').order('name'),
       supabase.from('milestones').select('*').order('milestone_date'),
       supabase.from('monthly_diary').select('*').order('month_number'),
+      supabase.from('invite_send_logs').select('*').order('created_at', { ascending: false }).limit(100),
     ]);
     if (inv.data) setInvites(inv.data);
     if (prof.data) setProfiles(prof.data);
@@ -100,6 +113,7 @@ export default function Admin() {
     if (cat.data) setCategories(cat.data);
     if (ms.data) setMilestones(ms.data);
     if (di.data) setDiary(di.data);
+    if (logs.data) setSendLogs(logs.data);
   };
 
   const saveDiaryEntry = async () => {
@@ -252,6 +266,7 @@ export default function Admin() {
 
   const tabs = [
     { key: 'invites' as const, label: '🔗 Convites' },
+    { key: 'logs' as const, label: '📨 Envios' },
     { key: 'family' as const, label: '👨‍👩‍👧 Família' },
     { key: 'categories' as const, label: '📁 Categorias' },
     { key: 'timeline' as const, label: '📅 Linha do Tempo' },
@@ -350,6 +365,37 @@ export default function Admin() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Send Logs Tab */}
+        {tab === 'logs' && (
+          <div className="space-y-2">
+            {sendLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Nenhum envio registrado ainda</p>}
+            {sendLogs.map(log => (
+              <div key={log.id} className="bg-card p-3 rounded-lg border border-border text-sm">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      log.status === 'sent' ? 'bg-green-500/20 text-green-700 dark:text-green-400' :
+                      log.status === 'failed' ? 'bg-destructive/20 text-destructive' :
+                      'bg-secondary text-secondary-foreground'
+                    }`}>
+                      {log.status === 'sent' ? '✅ Enviado' : log.status === 'failed' ? '❌ Falhou' : '⏳ ' + log.status}
+                    </span>
+                    <span className="font-medium text-foreground">{log.recipient_name || 'Sem nome'}</span>
+                    {log.relation && <span className="text-xs text-muted-foreground">({log.relation})</span>}
+                  </div>
+                  <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString('pt-BR')}</span>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  📱 {log.recipient_phone || '—'} • 🔗 <code>{log.invite_code}</code>
+                </div>
+                {log.error_message && (
+                  <div className="mt-1 text-xs text-destructive">Erro: {log.error_message}</div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
