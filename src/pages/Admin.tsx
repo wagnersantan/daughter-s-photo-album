@@ -368,6 +368,37 @@ export default function Admin() {
           </div>
         )}
 
+        {/* Send Logs Tab */}
+        {tab === 'logs' && (
+          <div className="space-y-2">
+            {sendLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Nenhum envio registrado ainda</p>}
+            {sendLogs.map(log => (
+              <div key={log.id} className="bg-card p-3 rounded-lg border border-border text-sm">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      log.status === 'sent' ? 'bg-green-500/20 text-green-700 dark:text-green-400' :
+                      log.status === 'failed' ? 'bg-destructive/20 text-destructive' :
+                      'bg-secondary text-secondary-foreground'
+                    }`}>
+                      {log.status === 'sent' ? '✅ Enviado' : log.status === 'failed' ? '❌ Falhou' : '⏳ ' + log.status}
+                    </span>
+                    <span className="font-medium text-foreground">{log.recipient_name || 'Sem nome'}</span>
+                    {log.relation && <span className="text-xs text-muted-foreground">({log.relation})</span>}
+                  </div>
+                  <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString('pt-BR')}</span>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  📱 {log.recipient_phone || '—'} • 🔗 <code>{log.invite_code}</code>
+                </div>
+                {log.error_message && (
+                  <div className="mt-1 text-xs text-destructive">Erro: {log.error_message}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Family Tab */}
         {tab === 'family' && (
           <div className="space-y-3">
