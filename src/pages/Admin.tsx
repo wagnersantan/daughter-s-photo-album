@@ -98,7 +98,7 @@ export default function Admin() {
   }, []);
 
   const fetchAll = async () => {
-    const [inv, prof, perm, rol, cat, ms, di, logs] = await Promise.all([
+    const [inv, prof, perm, rol, cat, ms, di, logs, settings] = await Promise.all([
       supabase.from('invite_links').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('user_id, display_name'),
       supabase.from('user_permissions').select('*'),
@@ -107,6 +107,7 @@ export default function Admin() {
       supabase.from('milestones').select('*').order('milestone_date'),
       supabase.from('monthly_diary').select('*').order('month_number'),
       supabase.from('invite_send_logs').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('site_settings').select('value').eq('key', 'n8n_flow_enabled').maybeSingle(),
     ]);
     if (inv.data) setInvites(inv.data);
     if (prof.data) setProfiles(prof.data);
@@ -116,6 +117,23 @@ export default function Admin() {
     if (ms.data) setMilestones(ms.data);
     if (di.data) setDiary(di.data);
     if (logs.data) setSendLogs(logs.data);
+    setFlowEnabled((settings.data?.value ?? 'true') === 'true');
+  };
+
+  const toggleFlow = async () => {
+    setTogglingFlow(true);
+    const next = !flowEnabled;
+    const { error } = await supabase
+      .from('site_settings')
+      .update({ value: next ? 'true' : 'false' })
+      .eq('key', 'n8n_flow_enabled');
+    setTogglingFlow(false);
+    if (error) {
+      toast.error('Erro ao alterar fluxo: ' + error.message);
+      return;
+    }
+    setFlowEnabled(next);
+    toast.success(next ? '✅ Fluxo de envio LIGADO' : '🛑 Fluxo de envio DESLIGADO');
   };
 
   const saveDiaryEntry = async () => {
