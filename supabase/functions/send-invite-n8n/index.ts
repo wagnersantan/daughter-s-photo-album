@@ -50,6 +50,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check global kill switch
+    const { data: flagRow } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "n8n_flow_enabled")
+      .maybeSingle();
+    const flowEnabled = (flagRow?.value ?? "true") === "true";
+    if (!flowEnabled) {
+      return new Response(
+        JSON.stringify({ error: "Fluxo de envio está desligado. Ative no Admin para enviar." }),
+        { status: 423, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Fetch invite (RLS allows authenticated users)
     const { data: invite, error: invErr } = await supabase
       .from("invite_links")
