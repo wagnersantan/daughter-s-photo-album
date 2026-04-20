@@ -78,6 +78,8 @@ export default function Admin() {
   const [newMaxUses, setNewMaxUses] = useState('');
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendForm, setSendForm] = useState<Record<string, { name: string; phone: string; relation: string }>>({});
+  const [flowEnabled, setFlowEnabled] = useState<boolean>(true);
+  const [togglingFlow, setTogglingFlow] = useState(false);
 
   // Milestone form
   const [msTitle, setMsTitle] = useState('');
