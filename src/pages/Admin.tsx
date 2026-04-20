@@ -78,6 +78,8 @@ export default function Admin() {
   const [newMaxUses, setNewMaxUses] = useState('');
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendForm, setSendForm] = useState<Record<string, { name: string; phone: string; relation: string }>>({});
+  const [flowEnabled, setFlowEnabled] = useState<boolean>(true);
+  const [togglingFlow, setTogglingFlow] = useState(false);
 
   // Milestone form
   const [msTitle, setMsTitle] = useState('');
@@ -96,7 +98,7 @@ export default function Admin() {
   }, []);
 
   const fetchAll = async () => {
-    const [inv, prof, perm, rol, cat, ms, di, logs] = await Promise.all([
+    const [inv, prof, perm, rol, cat, ms, di, logs, settings] = await Promise.all([
       supabase.from('invite_links').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('user_id, display_name'),
       supabase.from('user_permissions').select('*'),
@@ -105,6 +107,7 @@ export default function Admin() {
       supabase.from('milestones').select('*').order('milestone_date'),
       supabase.from('monthly_diary').select('*').order('month_number'),
       supabase.from('invite_send_logs').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('site_settings').select('value').eq('key', 'n8n_flow_enabled').maybeSingle(),
     ]);
     if (inv.data) setInvites(inv.data);
     if (prof.data) setProfiles(prof.data);
@@ -114,6 +117,23 @@ export default function Admin() {
     if (ms.data) setMilestones(ms.data);
     if (di.data) setDiary(di.data);
     if (logs.data) setSendLogs(logs.data);
+    setFlowEnabled((settings.data?.value ?? 'true') === 'true');
+  };
+
+  const toggleFlow = async () => {
+    setTogglingFlow(true);
+    const next = !flowEnabled;
+    const { error } = await supabase
+      .from('site_settings')
+      .update({ value: next ? 'true' : 'false' })
+      .eq('key', 'n8n_flow_enabled');
+    setTogglingFlow(false);
+    if (error) {
+      toast.error('Erro ao alterar fluxo: ' + error.message);
+      return;
+    }
+    setFlowEnabled(next);
+    toast.success(next ? '✅ Fluxo de envio LIGADO' : '🛑 Fluxo de envio DESLIGADO');
   };
 
   const saveDiaryEntry = async () => {
@@ -370,7 +390,36 @@ export default function Admin() {
 
         {/* Send Logs Tab */}
         {tab === 'logs' && (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* Kill switch global */}
+            <div className={`p-4 rounded-lg border-2 flex items-center justify-between gap-3 ${
+              flowEnabled
+                ? 'bg-green-500/10 border-green-500/40'
+                : 'bg-destructive/10 border-destructive/40'
+            }`}>
+              <div>
+                <div className="font-semibold text-foreground flex items-center gap-2">
+                  {flowEnabled ? '🟢 Fluxo de envio LIGADO' : '🔴 Fluxo de envio DESLIGADO'}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {flowEnabled
+                    ? 'Os envios pelo n8n estão ativos. Clique para pausar.'
+                    : 'Nenhum envio será disparado até religar manualmente.'}
+                </p>
+              </div>
+              <button
+                onClick={toggleFlow}
+                disabled={togglingFlow}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition disabled:opacity-50 ${
+                  flowEnabled
+                    ? 'bg-destructive text-destructive-foreground hover:opacity-90'
+                    : 'bg-green-600 text-white hover:opacity-90'
+                }`}
+              >
+                {togglingFlow ? '...' : flowEnabled ? 'Desligar' : 'Ligar'}
+              </button>
+            </div>
+
             {sendLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Nenhum envio registrado ainda</p>}
             {sendLogs.map(log => (
               <div key={log.id} className="bg-card p-3 rounded-lg border border-border text-sm">
