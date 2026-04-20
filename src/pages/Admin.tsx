@@ -390,7 +390,36 @@ export default function Admin() {
 
         {/* Send Logs Tab */}
         {tab === 'logs' && (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* Kill switch global */}
+            <div className={`p-4 rounded-lg border-2 flex items-center justify-between gap-3 ${
+              flowEnabled
+                ? 'bg-green-500/10 border-green-500/40'
+                : 'bg-destructive/10 border-destructive/40'
+            }`}>
+              <div>
+                <div className="font-semibold text-foreground flex items-center gap-2">
+                  {flowEnabled ? '🟢 Fluxo de envio LIGADO' : '🔴 Fluxo de envio DESLIGADO'}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {flowEnabled
+                    ? 'Os envios pelo n8n estão ativos. Clique para pausar.'
+                    : 'Nenhum envio será disparado até religar manualmente.'}
+                </p>
+              </div>
+              <button
+                onClick={toggleFlow}
+                disabled={togglingFlow}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition disabled:opacity-50 ${
+                  flowEnabled
+                    ? 'bg-destructive text-destructive-foreground hover:opacity-90'
+                    : 'bg-green-600 text-white hover:opacity-90'
+                }`}
+              >
+                {togglingFlow ? '...' : flowEnabled ? 'Desligar' : 'Ligar'}
+              </button>
+            </div>
+
             {sendLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Nenhum envio registrado ainda</p>}
             {sendLogs.map(log => (
               <div key={log.id} className="bg-card p-3 rounded-lg border border-border text-sm">
